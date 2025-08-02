@@ -5,6 +5,8 @@ import ProjectsManager from './ProjectsManager'
 import TestimonialsManager from './TestimonialsManager'
 import SkillsManager from './SkillsManager'
 import PersonalInfoManager from './PersonalInfoManager'
+import AboutManager from './AboutManager'
+import ContactSubmissionsManager from './ContactSubmissionsManager'
 
 const Dashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState('overview')
@@ -21,6 +23,10 @@ const Dashboard: React.FC = () => {
         return <SkillsManager />
       case 'personal':
         return <PersonalInfoManager />
+      case 'about':
+        return <AboutManager />
+      case 'contact':
+        return <ContactSubmissionsManager />
       case 'settings':
         return <Settings />
       default:

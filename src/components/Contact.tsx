@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
-import { Mail, Phone, MapPin, Send, Github, Linkedin, Twitter } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Mail, Phone, MapPin, Send, Github, Linkedin, Twitter, Instagram } from 'lucide-react';
+import { contactInfoService, contactSubmissionsService } from '../lib/database';
+import type { ContactInfo as ContactInfoType } from '../lib/supabase';
 
 const Contact = () => {
   const [formData, setFormData] = useState({
@@ -9,6 +11,44 @@ const Contact = () => {
     message: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [contactInfo, setContactInfo] = useState<ContactInfoType[]>([]);
+  const [socialLinks, setSocialLinks] = useState<ContactInfoType[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Icon mapping for dynamic icons
+  const iconMap: { [key: string]: React.ReactNode } = {
+    Mail: <Mail size={24} />,
+    Phone: <Phone size={24} />,
+    MapPin: <MapPin size={24} />,
+    Github: <Github size={24} />,
+    Linkedin: <Linkedin size={24} />,
+    Twitter: <Twitter size={24} />,
+    Instagram: <Instagram size={24} />
+  };
+
+  // Fetch contact data from database
+  useEffect(() => {
+    const fetchContactData = async () => {
+      try {
+        setLoading(true);
+        const [contactData, socialData] = await Promise.all([
+          contactInfoService.getByType('contact'),
+          contactInfoService.getByType('social')
+        ]);
+        setContactInfo(contactData);
+        setSocialLinks(socialData);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching contact data:', err);
+        setError('Failed to load contact information');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchContactData();
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({
@@ -21,43 +61,32 @@ const Contact = () => {
     e.preventDefault();
     setIsSubmitting(true);
     
-    // Simulate form submission
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    console.log('Form submitted:', formData);
-    setIsSubmitting(false);
-    setFormData({ name: '', email: '', subject: '', message: '' });
-    
-    // You would typically send this data to your backend here
-    alert('Thank you for your message! I\'ll get back to you soon.');
+    try {
+      // Get user's IP and user agent for tracking
+      const userAgent = navigator.userAgent;
+      
+      // Submit form data to database
+      await contactSubmissionsService.create({
+        name: formData.name,
+        email: formData.email,
+        subject: formData.subject,
+        message: formData.message,
+        status: 'unread',
+        user_agent: userAgent
+      });
+      
+      // Reset form on successful submission
+      setFormData({ name: '', email: '', subject: '', message: '' });
+      alert('Thank you for your message! I\'ll get back to you soon.');
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      alert('Sorry, there was an error sending your message. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const contactInfo = [
-    {
-      icon: <Mail size={24} />,
-      title: "Email",
-      details: "abudanishmd@gmail.com",
-      link: "mailto:abudanishmd@gmail.com"
-    },
-    {
-      icon: <Phone size={24} />,
-      title: "Phone",
-      details: "+91 6305597058",
-      link: "tel:+916305597058"
-    },
-    {
-      icon: <MapPin size={24} />,
-      title: "Location",
-      details: "Bhubaneswar, Odisha, India",
-      link: "#"
-    }
-  ];
 
-  const socialLinks = [
-    { icon: <Github size={24} />, url: "#", label: "GitHub" },
-    { icon: <Linkedin size={24} />, url: "#", label: "LinkedIn" },
-    { icon: <Twitter size={24} />, url: "#", label: "Twitter" }
-  ];
 
   return (
     <section id="contact" className="py-20 bg-slate-900/30">
@@ -169,39 +198,89 @@ const Contact = () => {
               </p>
             </div>
 
-            <div className="space-y-4">
-              {contactInfo.map((info, index) => (
-                <a
-                  key={index}
-                  href={info.link}
-                  className="flex items-center space-x-4 p-4 card hover:border-accent/30 transition-all duration-300 group"
-                >
-                  <div className="bg-text-gradient group-hover:text-white transition-colors duration-300">
-                    {info.icon}
+            {/* Loading State */}
+            {loading ? (
+              <div className="animate-pulse space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="flex items-center space-x-4 p-4 card">
+                    <div className="w-6 h-6 bg-slate-700 rounded"></div>
+                    <div className="flex-1">
+                      <div className="h-4 bg-slate-700 rounded mb-2"></div>
+                      <div className="h-3 bg-slate-700 rounded w-2/3"></div>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="text-white font-medium">{info.title}</h4>
-                    <p className="text-muted text-sm">{info.details}</p>
-                  </div>
-                </a>
-              ))}
-            </div>
-
-            <div>
-              <h4 className="text-xl font-heading font-semibold text-white mb-4">Follow Me</h4>
-              <div className="flex space-x-4">
-                {socialLinks.map((social, index) => (
-                  <a
-                    key={index}
-                    href={social.url}
-                    aria-label={social.label}
-                    className="p-3 bg-slate-800/50 rounded-lg hover:bg-gradient-custom/20 hover:text-gradient-custom transition-all duration-300 text-muted"
-                  >
-                    {social.icon}
-                  </a>
                 ))}
               </div>
-            </div>
+            ) : error ? (
+              <div className="text-center py-8">
+                <p className="text-red-400 mb-4">{error}</p>
+                <button 
+                  onClick={() => window.location.reload()} 
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Retry
+                </button>
+              </div>
+            ) : (
+              <>
+                {/* Dynamic Contact Info */}
+                {contactInfo.length > 0 && (
+                  <div className="space-y-4">
+                    {contactInfo.map((info) => {
+                      const href = info.label === 'Email' ? `mailto:${info.value}` : 
+                                  info.label === 'Phone' ? `tel:${info.value}` : 
+                                  info.value.startsWith('http') ? info.value : '#';
+                      
+                      return (
+                        <a
+                          key={info.id}
+                          href={href}
+                          target={href.startsWith('http') ? '_blank' : undefined}
+                          rel={href.startsWith('http') ? 'noopener noreferrer' : undefined}
+                          className="flex items-center space-x-4 p-4 card hover:border-accent/30 transition-all duration-300 group"
+                        >
+                          <div className="group-hover:text-white transition-colors duration-300">
+                            {iconMap[info.icon] || <Mail size={24} />}
+                          </div>
+                          <div>
+                            <h4 className="text-white font-medium">{info.label}</h4>
+                            <p className="text-muted text-sm">{info.value}</p>
+                          </div>
+                        </a>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Dynamic Social Links */}
+                {socialLinks.length > 0 && (
+                  <div>
+                    <h4 className="text-xl font-heading font-semibold text-white mb-4">Follow Me</h4>
+                    <div className="flex space-x-4">
+                      {socialLinks.map((social) => (
+                        <a
+                          key={social.id}
+                          href={social.value}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          aria-label={social.label}
+                          className="p-3 bg-slate-800/50 rounded-lg hover:bg-gradient-custom/20 hover:text-gradient-custom transition-all duration-300 text-muted"
+                        >
+                          {iconMap[social.icon] || <Github size={24} />}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Empty States */}
+                {!loading && !error && contactInfo.length === 0 && socialLinks.length === 0 && (
+                  <div className="text-center py-8">
+                    <p className="text-muted mb-4">Contact information will be available soon.</p>
+                  </div>
+                )}
+              </>
+            )}
 
             <div className="card p-6 border-accent/20">
               <h4 className="text-lg font-heading font-semibold text-white mb-2">Available for Projects</h4>

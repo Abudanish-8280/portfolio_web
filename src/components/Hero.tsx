@@ -1,7 +1,38 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronDown, Github, Linkedin, Mail } from 'lucide-react';
+import { personalInfoService } from '../lib/database';
+import type { PersonalInfo } from '../lib/supabase';
 
 const Hero = () => {
+  const [personalInfo, setPersonalInfo] = useState<PersonalInfo | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch personal info from database
+  useEffect(() => {
+    const fetchPersonalInfo = async () => {
+      try {
+        setLoading(true);
+        const data = await personalInfoService.get();
+        if (data) {
+          setPersonalInfo(data);
+        }
+      } catch (err) {
+        console.error('Error fetching personal info:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPersonalInfo();
+  }, []);
+
+  // Default values if no data is loaded
+  const displayName = personalInfo?.name || 'MD Abudanish';
+  const displayTitle = personalInfo?.title || 'Front-End Developer';
+  const displayBio = personalInfo?.bio || 'Specializing in Shopify & WordPress development with 4+ years of experience creating exceptional web experiences';
+  const githubUrl = personalInfo?.github || '#';
+  const linkedinUrl = personalInfo?.linkedin || '#';
+  const email = personalInfo?.email || '#';
 
   return (
     <section id="home" className="min-h-screen flex items-center justify-center relative">
@@ -15,17 +46,27 @@ const Hero = () => {
           </div>
         </div>
         
-        <h1 className="text-5xl md:text-6xl lg:text-7xl font-heading font-bold mb-6 leading-tight bg-text-gradient">
-          MD Abudanish
-        </h1>
-        
-        <p className="text-xl md:text-2xl text-muted mb-4 leading-relaxed">
-          Front-End Developer & <span className="text-white">Digital Craftsman</span>
-        </p>
-        
-        <p className="text-lg text-muted mb-12 max-w-2xl mx-auto leading-relaxed">
-          Specializing in Shopify & WordPress development with <span className="text-white">4+ years</span> of experience creating exceptional web experiences
-        </p>
+        {loading ? (
+          <div className="animate-pulse">
+            <div className="h-16 bg-slate-700 rounded mb-6 mx-auto max-w-md"></div>
+            <div className="h-8 bg-slate-700 rounded mb-4 mx-auto max-w-lg"></div>
+            <div className="h-6 bg-slate-700 rounded mb-12 mx-auto max-w-2xl"></div>
+          </div>
+        ) : (
+          <>
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-heading font-bold mb-6 leading-tight bg-text-gradient">
+              {displayName}
+            </h1>
+            
+            <p className="text-xl md:text-2xl text-muted mb-4 leading-relaxed">
+              {displayTitle} & <span className="text-white">Digital Craftsman</span>
+            </p>
+            
+            <p className="text-lg text-muted mb-12 max-w-2xl mx-auto leading-relaxed">
+              {displayBio}
+            </p>
+          </>
+        )}
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
           <a
@@ -43,13 +84,26 @@ const Hero = () => {
         </div>
 
         <div className="flex justify-center space-x-6 mb-12">
-          <a href="#" className="p-3 text-muted hover:text-gradient-custom transition-colors duration-300">
+          <a 
+            href={githubUrl} 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="p-3 text-muted hover:text-gradient-custom transition-colors duration-300"
+          >
             <Github size={24} />
           </a>
-          <a href="#" className="p-3 text-muted hover:text-gradient-custom transition-colors duration-300">
+          <a 
+            href={linkedinUrl} 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="p-3 text-muted hover:text-gradient-custom transition-colors duration-300"
+          >
             <Linkedin size={24} />
           </a>
-          <a href="#" className="p-3 text-muted hover:text-gradient-custom transition-colors duration-300">
+          <a 
+            href={`mailto:${email}`} 
+            className="p-3 text-muted hover:text-gradient-custom transition-colors duration-300"
+          >
             <Mail size={24} />
           </a>
         </div>

@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react'
-import { 
-  Home, 
-  FolderOpen, 
-  MessageSquare, 
-  Code, 
-  User, 
-  Settings,
+import {
   Menu,
   X,
-  ExternalLink,
+  Home,
+  FolderOpen,
+  MessageSquare,
+  Code,
+  User,
+  Settings,
+  Search,
   Bell,
-  Search
+  ExternalLink,
+  Command,
+  Info,
+  Mail
 } from 'lucide-react'
 
 interface DashboardLayoutProps {
@@ -64,6 +67,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     { id: 'testimonials', label: 'Testimonials', icon: MessageSquare },
     { id: 'skills', label: 'Skills', icon: Code },
     { id: 'personal', label: 'Personal Info', icon: User },
+    { id: 'about', label: 'About Me', icon: Info },
+    { id: 'contact', label: 'Contact Submissions', icon: Mail },
     { id: 'settings', label: 'Settings', icon: Settings },
   ]
 

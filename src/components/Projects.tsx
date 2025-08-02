@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ExternalLink, Github, ChevronLeft, ChevronRight } from 'lucide-react';
+import { projectsService } from '../lib/database';
+import type { Project } from '../lib/supabase';
 
 // Tech Slider Component
 const TechSlider = ({ tech }: { tech: string[] }) => {
@@ -81,92 +83,32 @@ const TechSlider = ({ tech }: { tech: string[] }) => {
 
 const Projects = () => {
   const [activeTab, setActiveTab] = useState('All');
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const projects = [
-    {
-      title: "Premium Shopify Store",
-      description: "Custom Shopify theme development with advanced filtering, multi-currency support, and optimized checkout flow. Increased conversion rate by 35%.",
-      image: "https://images.pexels.com/photos/3184292/pexels-photo-3184292.jpeg?auto=compress&cs=tinysrgb&w=800",
-      tech: ["Shopify", "Liquid", "JavaScript", "CSS3"],
-      liveUrl: "#",
-      githubUrl: "#",
-      category: "Shopify"
-    },
-    {
-      title: "WordPress Corporate Site",
-      description: "Full-stack WordPress development with custom post types, ACF integration, and responsive design. Built for a tech company with 10k+ monthly visitors.",
-      image: "https://images.pexels.com/photos/196644/pexels-photo-196644.jpeg?auto=compress&cs=tinysrgb&w=800",
-      tech: ["WordPress", "PHP", "JavaScript", "MySQL"],
-      liveUrl: "#",
-      githubUrl: "#",
-      category: "WordPress"
-    },
-    {
-      title: "WooCommerce Online Store",
-      description: "Complete e-commerce solution with WooCommerce, custom payment gateways, inventory management, and advanced product filtering.",
-      image: "https://images.pexels.com/photos/230544/pexels-photo-230544.jpeg?auto=compress&cs=tinysrgb&w=800",
-      tech: ["WordPress", "WooCommerce", "PHP", "Stripe"],
-      liveUrl: "#",
-      githubUrl: "#",
-      category: "WooCommerce"
-    },
-    {
-      title: "React Dashboard App",
-      description: "Modern analytics dashboard built with React and D3.js. Features real-time data visualization, dark/light themes, and responsive design.",
-      image: "https://images.pexels.com/photos/265087/pexels-photo-265087.jpeg?auto=compress&cs=tinysrgb&w=800",
-      tech: ["React", "TypeScript", "D3.js", "Tailwind"],
-      liveUrl: "#",
-      githubUrl: "#",
-      category: "React"
-    },
-    {
-      title: "Angular Enterprise App",
-      description: "Large-scale Angular application with micro-frontend architecture, state management with NgRx, and comprehensive testing suite.",
-      image: "https://images.pexels.com/photos/574071/pexels-photo-574071.jpeg?auto=compress&cs=tinysrgb&w=800",
-      tech: ["Angular", "TypeScript", "NgRx", "Material UI"],
-      liveUrl: "#",
-      githubUrl: "#",
-      category: "Angular"
-    },
-    {
-      title: "Fashion Brand Website",
-      description: "Headless Shopify store with Next.js frontend. Features include AR try-on, personalized recommendations, and seamless mobile experience.",
-      image: "https://images.pexels.com/photos/996329/pexels-photo-996329.jpeg?auto=compress&cs=tinysrgb&w=800",
-      tech: ["Next.js", "Shopify API", "GraphQL", "Tailwind"],
-      liveUrl: "#",
-      githubUrl: "#",
-      category: "Shopify"
-    },
-    {
-      title: "Blog & Portfolio Site",
-      description: "Custom WordPress theme with Gutenberg blocks, SEO optimization, and performance enhancements. Achieved 95+ PageSpeed score.",
-      image: "https://images.pexels.com/photos/267350/pexels-photo-267350.jpeg?auto=compress&cs=tinysrgb&w=800",
-      tech: ["WordPress", "PHP", "Gutenberg", "SCSS"],
-      liveUrl: "#",
-      githubUrl: "#",
-      category: "WordPress"
-    },
-    {
-      title: "React E-learning Platform",
-      description: "Interactive learning platform built with React, featuring video streaming, progress tracking, quizzes, and certificate generation.",
-      image: "https://images.pexels.com/photos/4144923/pexels-photo-4144923.jpeg?auto=compress&cs=tinysrgb&w=800",
-      tech: ["React", "Node.js", "MongoDB", "Socket.io"],
-      liveUrl: "#",
-      githubUrl: "#",
-      category: "React"
-    },
-    {
-      title: "Multi-vendor Marketplace",
-      description: "Complex WooCommerce multi-vendor marketplace with vendor dashboards, commission management, and advanced reporting.",
-      image: "https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=800",
-      tech: ["WooCommerce", "PHP", "JavaScript", "MySQL"],
-      liveUrl: "#",
-      githubUrl: "#",
-      category: "WooCommerce"
-    }
-  ];
+  // Fetch projects from database
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        setLoading(true);
+        const data = await projectsService.getAll();
+        setProjects(data);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching projects:', err);
+        setError('Failed to load projects');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const tabs = ['All', 'Shopify', 'WordPress', 'WooCommerce', 'Angular', 'React'];
+    fetchProjects();
+  }, []);
+
+  // Get unique categories from projects data
+  const categories = Array.from(new Set(projects.map(project => project.category)));
+  const tabs = ['All', ...categories];
 
   const filteredProjects = activeTab === 'All' 
     ? projects 
@@ -206,59 +148,106 @@ const Projects = () => {
           </div>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredProjects.map((project, index) => (
-            <div
-              key={index}
-              className="group card hover:border-accent/30 transition-all duration-300"
+        {/* Loading State */}
+        {loading && (
+          <div className="flex justify-center items-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && (
+          <div className="text-center py-20">
+            <p className="text-red-400 mb-4">{error}</p>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
-              <div className="relative overflow-hidden rounded-lg">
-                <img
-                  src={project.image}
-                  alt={project.title}
-                  className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-                <div className="absolute inset-0 bg-slate-900/20 group-hover:bg-slate-900/40 transition-colors duration-300"></div>
-                <div className="absolute top-3 right-3">
-                  <span className="px-2 py-1 bg-gradient-custom text-white text-xs rounded-md font-medium">
-                    {project.category}
-                  </span>
+              Retry
+            </button>
+          </div>
+        )}
+
+        {/* Projects Grid */}
+        {!loading && !error && (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredProjects.map((project) => (
+              <div
+                key={project.id}
+                className="group card hover:border-accent/30 transition-all duration-300"
+              >
+                <div className="relative overflow-hidden rounded-lg">
+                  <img
+                    src={project.image}
+                    alt={project.title}
+                    className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                  <div className="absolute inset-0 bg-slate-900/20 group-hover:bg-slate-900/40 transition-colors duration-300"></div>
+                  <div className="absolute top-3 right-3">
+                    <span className="px-2 py-1 bg-gradient-custom text-white text-xs rounded-md font-medium">
+                      {project.category}
+                    </span>
+                  </div>
+                  {project.featured && (
+                    <div className="absolute top-3 left-3">
+                      <span className="px-2 py-1 bg-yellow-500 text-black text-xs rounded-md font-medium">
+                        Featured
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="p-6">
+                  <h3 className="text-xl font-heading font-semibold text-white mb-3 group-hover:text-gradient-custom transition-colors duration-300">
+                    {project.title}
+                  </h3>
+                  
+                  <p className="text-muted text-sm mb-4 leading-relaxed">
+                    {project.description}
+                  </p>
+
+                  <div className="mb-6">
+                    <TechSlider tech={project.technologies} />
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <a
+                      href={project.live_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center space-x-2 bg-text-gradient hover:text-white transition-colors duration-300 text-sm font-medium"
+                    >
+                      <ExternalLink size={16} />
+                      <span>View Live</span>
+                    </a>
+                    <a
+                      href={project.github_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center space-x-2 text-muted hover:text-white transition-colors duration-300 text-sm font-medium"
+                    >
+                      <Github size={16} />
+                      <span>Code</span>
+                    </a>
+                  </div>
                 </div>
               </div>
+            ))}
+          </div>
+        )}
 
-              <div className="p-6">
-                <h3 className="text-xl font-heading font-semibold text-white mb-3 group-hover:text-gradient-custom transition-colors duration-300">
-                  {project.title}
-                </h3>
-                
-                <p className="text-muted text-sm mb-4 leading-relaxed">
-                  {project.description}
-                </p>
-
-                <div className="mb-6">
-                  <TechSlider tech={project.tech} />
-                </div>
-
-                <div className="flex justify-between items-center">
-                  <a
-                    href={project.liveUrl}
-                    className="flex items-center space-x-2 bg-text-gradient hover:text-white transition-colors duration-300 text-sm font-medium"
-                  >
-                    <ExternalLink size={16} />
-                    <span>View Live</span>
-                  </a>
-                  <a
-                    href={project.githubUrl}
-                    className="flex items-center space-x-2 text-muted hover:text-white transition-colors duration-300 text-sm font-medium"
-                  >
-                    <Github size={16} />
-                    <span>Code</span>
-                  </a>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+        {/* Empty State */}
+        {!loading && !error && filteredProjects.length === 0 && (
+          <div className="text-center py-20">
+            <p className="text-muted mb-4">No projects found for the selected category.</p>
+            <button 
+              onClick={() => setActiveTab('All')} 
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              View All Projects
+            </button>
+          </div>
+        )}
       </div>
     </section>
   );

@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import type { Project, Testimonial, Skill, PersonalInfo } from './supabase'
+import type { Project, Testimonial, Skill, PersonalInfo, AboutFeature, ContactInfo, ContactSubmission } from './supabase'
 
 // Re-export types for easier importing
 export type { Project, Testimonial, Skill, PersonalInfo }
@@ -188,5 +188,242 @@ export const personalInfoService = {
       if (error) throw error
       return data
     }
+  }
+}
+
+// About Features CRUD operations
+export const aboutFeaturesService = {
+  async getAll(): Promise<AboutFeature[]> {
+    const { data, error } = await supabase
+      .from('about_features')
+      .select('*')
+      .eq('active', true)
+      .order('order_index', { ascending: true })
+    
+    if (error) throw error
+    return data || []
+  },
+
+  async create(aboutFeature: Omit<AboutFeature, 'id' | 'created_at' | 'updated_at'>): Promise<AboutFeature> {
+    const { data, error } = await supabase
+      .from('about_features')
+      .insert([aboutFeature])
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async update(id: number, updates: Partial<Omit<AboutFeature, 'id' | 'created_at' | 'updated_at'>>): Promise<AboutFeature> {
+    const { data, error } = await supabase
+      .from('about_features')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single()
+    
+    if (error) {
+      console.error('Error updating about feature:', error)
+      throw error
+    }
+    
+    return data
+  },
+
+  async delete(id: number): Promise<void> {
+    const { error } = await supabase
+      .from('about_features')
+      .delete()
+      .eq('id', id)
+    
+    if (error) {
+      console.error('Error deleting about feature:', error)
+      throw error
+    }
+  }
+}
+
+// Contact Info CRUD operations
+export const contactInfoService = {
+  async getAll(): Promise<ContactInfo[]> {
+    const { data, error } = await supabase
+      .from('contact_info')
+      .select('*')
+      .eq('active', true)
+      .order('type', { ascending: true })
+      .order('order_index', { ascending: true })
+    
+    if (error) throw error
+    return data || []
+  },
+
+  async getByType(type: 'contact' | 'social'): Promise<ContactInfo[]> {
+    const { data, error } = await supabase
+      .from('contact_info')
+      .select('*')
+      .eq('type', type)
+      .eq('active', true)
+      .order('order_index', { ascending: true })
+    
+    if (error) {
+      console.error('Error fetching contact info by type:', error)
+      throw error
+    }
+    
+    return data || []
+  },
+
+  async create(contactInfo: Omit<ContactInfo, 'id' | 'created_at' | 'updated_at'>): Promise<ContactInfo> {
+    const { data, error } = await supabase
+      .from('contact_info')
+      .insert([contactInfo])
+      .select()
+      .single()
+    
+    if (error) {
+      console.error('Error creating contact info:', error)
+      throw error
+    }
+    
+    return data
+  },
+
+  async update(id: number, updates: Partial<Omit<ContactInfo, 'id' | 'created_at' | 'updated_at'>>): Promise<ContactInfo> {
+    const { data, error } = await supabase
+      .from('contact_info')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single()
+    
+    if (error) {
+      console.error('Error updating contact info:', error)
+      throw error
+    }
+    
+    return data
+  },
+
+  async delete(id: number): Promise<void> {
+    const { error } = await supabase
+      .from('contact_info')
+      .delete()
+      .eq('id', id)
+    
+    if (error) {
+      console.error('Error deleting contact info:', error)
+      throw error
+    }
+  }
+}
+
+// Contact Submissions Service
+export const contactSubmissionsService = {
+  async getAll(): Promise<ContactSubmission[]> {
+    const { data, error } = await supabase
+      .from('contact_submissions')
+      .select('*')
+      .order('created_at', { ascending: false })
+    
+    if (error) {
+      console.error('Error fetching contact submissions:', error)
+      throw error
+    }
+    
+    return data || []
+  },
+
+  async getById(id: number): Promise<ContactSubmission | null> {
+    const { data, error } = await supabase
+      .from('contact_submissions')
+      .select('*')
+      .eq('id', id)
+      .single()
+    
+    if (error) {
+      console.error('Error fetching contact submission:', error)
+      throw error
+    }
+    
+    return data
+  },
+
+  async getByStatus(status: 'unread' | 'read' | 'replied'): Promise<ContactSubmission[]> {
+    const { data, error } = await supabase
+      .from('contact_submissions')
+      .select('*')
+      .eq('status', status)
+      .order('created_at', { ascending: false })
+    
+    if (error) {
+      console.error('Error fetching contact submissions by status:', error)
+      throw error
+    }
+    
+    return data || []
+  },
+
+  async create(submission: Omit<ContactSubmission, 'id' | 'created_at' | 'updated_at'>): Promise<ContactSubmission> {
+    const { data, error } = await supabase
+      .from('contact_submissions')
+      .insert([submission])
+      .select()
+      .single()
+    
+    if (error) {
+      console.error('Error creating contact submission:', error)
+      throw error
+    }
+    
+    return data
+  },
+
+  async updateStatus(id: number, status: 'unread' | 'read' | 'replied'): Promise<ContactSubmission> {
+    const { data, error } = await supabase
+      .from('contact_submissions')
+      .update({ status })
+      .eq('id', id)
+      .select()
+      .single()
+    
+    if (error) {
+      console.error('Error updating contact submission status:', error)
+      throw error
+    }
+    
+    return data
+  },
+
+  async delete(id: number): Promise<void> {
+    const { error } = await supabase
+      .from('contact_submissions')
+      .delete()
+      .eq('id', id)
+    
+    if (error) {
+      console.error('Error deleting contact submission:', error)
+      throw error
+    }
+  },
+
+  async getStats(): Promise<{ total: number; unread: number; read: number; replied: number }> {
+    const { data, error } = await supabase
+      .from('contact_submissions')
+      .select('status')
+    
+    if (error) {
+      console.error('Error fetching contact submission stats:', error)
+      throw error
+    }
+    
+    const stats = {
+      total: data?.length || 0,
+      unread: data?.filter(s => s.status === 'unread').length || 0,
+      read: data?.filter(s => s.status === 'read').length || 0,
+      replied: data?.filter(s => s.status === 'replied').length || 0
+    }
+    
+    return stats
   }
 }

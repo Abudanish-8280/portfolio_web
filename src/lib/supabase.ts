@@ -41,6 +41,42 @@ export interface Skill {
   created_at?: string
 }
 
+export interface AboutFeature {
+  id: number
+  title: string
+  description: string
+  icon: string
+  order_index: number
+  active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export interface ContactInfo {
+  id: number;
+  type: 'contact' | 'social';
+  label: string;
+  value: string;
+  icon: string;
+  order_index: number;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ContactSubmission {
+  id: number;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  status: 'unread' | 'read' | 'replied';
+  ip_address?: string;
+  user_agent?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface PersonalInfo {
   id?: number
   name: string
