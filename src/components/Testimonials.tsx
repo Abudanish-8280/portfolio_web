@@ -75,7 +75,12 @@ const Testimonials = () => {
                 {/* Stars */}
                 <div className="flex justify-center mb-6">
                   {[...Array(testimonial.rating)].map((_, i) => (
-                    <Star key={i} size={18} className="bg-text-gradient fill-current mx-1 group-hover:scale-110 transition-transform duration-300" />
+                    <Star
+                    key={i}
+                    size={18}
+                    className="mx-1 group-hover:scale-110 transition-transform duration-300"
+                    style={{ fill: 'rgb(233, 157, 70)', stroke: 'rgb(233, 157, 70)' }}
+                  />
                   ))}
                 </div>
 

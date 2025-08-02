@@ -56,7 +56,7 @@ const Header = () => {
               <a
                 key={item.href}
                 href={item.href}
-                className={`text-sm font-medium transition-colors duration-300 ${
+                className={`outline-none focus:outline-none text-sm font-medium transition-colors duration-300 ${
                   activeSection === item.href.substring(1)
                     ? 'bg-text-gradient'
                     : 'text-muted hover:text-white'

@@ -215,7 +215,7 @@ const Projects = () => {
                       href={project.live_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center space-x-2 bg-text-gradient hover:text-white transition-colors duration-300 text-sm font-medium"
+                      className="flex items-center space-x-2 hover:text-white transition-colors duration-300 text-sm font-medium"
                     >
                       <ExternalLink size={16} />
                       <span>View Live</span>
