@@ -20,9 +20,44 @@ body {
   color: #e2e8f0;
   background: #0f172a;
   overflow-x: hidden;
-  visibility: hidden;
+  visibility: visible;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Dashboard-specific styles */
+.card {
+  @apply bg-slate-800 border border-slate-700 rounded-xl shadow-lg;
+}
+
+.hover-lift {
+  @apply transition-all duration-300 hover:shadow-xl hover:-translate-y-1;
+}
+
+.bg-text-gradient {
+  @apply bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent;
+}
+
+.bg-gradient-custom {
+  @apply bg-gradient-to-r from-blue-500 to-purple-600;
+}
+
+.border-gradient-custom {
+  @apply border-blue-500;
+}
+
+/* Loading animations */
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 /* Enhanced Custom scrollbar */
