@@ -41,7 +41,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Portfolio />} />
           <Route 
-            path="https://abudanish.netlify.app/danish-auth" 
+            path="/danish-auth" 
             element={
               <ProtectedRoute>
                 <Dashboard />
