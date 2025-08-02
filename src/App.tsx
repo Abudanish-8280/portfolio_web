@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { gsap } from 'gsap';
 import Header from './components/Header';
 import Hero from './components/Hero';
@@ -41,13 +41,15 @@ function App() {
         <Routes>
           <Route path="/" element={<Portfolio />} />
           <Route 
-            path="/dashboard" 
+            path="/danish-auth" 
             element={
               <ProtectedRoute>
                 <Dashboard />
               </ProtectedRoute>
             } 
           />
+          {/* Catch-all route - redirect any other URL to portfolio landing page */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>
     </AuthProvider>
