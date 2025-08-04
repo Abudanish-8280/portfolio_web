@@ -17,11 +17,18 @@ import {
   LogOut
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
+import { contactSubmissionsService } from '../../lib/database'
 
 interface DashboardLayoutProps {
   children: React.ReactNode
   activeTab: string
   onTabChange: (tab: string) => void
+}
+
+interface SearchSuggestion {
+  title: string
+  type: string
+  action: () => void
 }
 
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({ 
@@ -31,7 +38,9 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [notifications, setNotifications] = useState(3)
+  const [notifications, setNotifications] = useState(0)
+  const [searchSuggestions, setSearchSuggestions] = useState<SearchSuggestion[]>([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
   const { user, signOut } = useAuth()
 
   // Handle keyboard shortcuts and responsive behavior
@@ -53,16 +62,90 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [sidebarOpen])
 
-  // Simulate notification updates
+  // Fetch real notifications from contact submissions
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (notifications > 0) {
-        setNotifications(prev => Math.max(0, prev - 1))
+    const fetchNotifications = async () => {
+      try {
+        const stats = await contactSubmissionsService.getStats()
+        setNotifications(stats.unread)
+      } catch (error) {
+        console.error('Error fetching notifications:', error)
+        setNotifications(0)
       }
-    }, 10000) // Reduce notifications every 10 seconds
+    }
+
+    fetchNotifications()
     
-    return () => clearTimeout(timer)
-  }, [notifications])
+    // Poll for new notifications every 30 seconds
+    const interval = setInterval(fetchNotifications, 30000)
+    
+    return () => clearInterval(interval)
+  }, [])
+
+  // Handle search functionality
+  useEffect(() => {
+    if (searchQuery.length > 0) {
+      const suggestions: SearchSuggestion[] = []
+      
+      // Add tab suggestions
+      const tabs = [
+        { id: 'overview', label: 'Dashboard Overview', keywords: ['overview', 'dashboard', 'stats', 'summary'] },
+        { id: 'projects', label: 'Projects Manager', keywords: ['projects', 'portfolio', 'work', 'showcase'] },
+        { id: 'testimonials', label: 'Testimonials', keywords: ['testimonials', 'reviews', 'feedback', 'clients'] },
+        { id: 'skills', label: 'Skills Manager', keywords: ['skills', 'technologies', 'expertise', 'tech stack'] },
+        { id: 'personal', label: 'Personal Info', keywords: ['personal', 'profile', 'bio', 'information'] },
+        { id: 'about', label: 'About Me Manager', keywords: ['about', 'features', 'highlights'] },
+        { id: 'contact', label: 'Contact Submissions', keywords: ['contact', 'messages', 'inbox', 'submissions'] },
+        { id: 'settings', label: 'Settings', keywords: ['settings', 'configuration', 'preferences'] }
+      ]
+      
+      const query = searchQuery.toLowerCase()
+      tabs.forEach(tab => {
+        if (tab.label.toLowerCase().includes(query) || 
+            tab.keywords.some(keyword => keyword.includes(query))) {
+          suggestions.push({
+            title: tab.label,
+            type: 'Navigate to',
+            action: () => {
+              onTabChange(tab.id)
+              setSearchQuery('')
+              setShowSuggestions(false)
+            }
+          })
+        }
+      })
+      
+      // Add quick action suggestions
+      if (query.includes('add') || query.includes('create') || query.includes('new')) {
+        suggestions.push(
+          {
+            title: 'Add New Project',
+            type: 'Quick Action',
+            action: () => {
+              onTabChange('projects')
+              setSearchQuery('')
+              setShowSuggestions(false)
+            }
+          },
+          {
+            title: 'Add New Testimonial',
+            type: 'Quick Action',
+            action: () => {
+              onTabChange('testimonials')
+              setSearchQuery('')
+              setShowSuggestions(false)
+            }
+          }
+        )
+      }
+      
+      setSearchSuggestions(suggestions.slice(0, 5)) // Limit to 5 suggestions
+      setShowSuggestions(true)
+    } else {
+      setShowSuggestions(false)
+      setSearchSuggestions([])
+    }
+  }, [searchQuery, onTabChange])
 
   const menuItems = [
     { id: 'overview', label: 'Overview', icon: Home },
@@ -114,9 +197,9 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                   setSidebarOpen(false)
                 }}
                 className={`
-                  w-full flex items-center px-6 py-3 text-left transition-colors duration-200
+                  w-full flex items-center px-6 py-3 text-left transition-colors duration-200 outline-none focus:outline-none
                   ${activeTab === item.id
-                    ? 'bg-blue-600 text-white border-r-4 border-blue-400'
+                    ? 'bg-gradient-custom'
                     : 'text-slate-300 hover:bg-slate-700 hover:text-white'
                   }
                 `}
@@ -153,15 +236,34 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             
             {/* Search Bar */}
             <div className="hidden md:flex items-center relative">
-              <Search size={18} className="absolute left-3 text-slate-400" />
+              <Search size={18} className="absolute left-3 text-slate-400 z-10" />
               <input
                 type="text"
                 placeholder="Search dashboard..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => searchQuery && setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                 className="w-64 px-4 py-2 pl-10 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
               />
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={16} />
+              
+              {/* Search Suggestions */}
+              {showSuggestions && searchSuggestions.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-slate-800 border border-slate-600 rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto">
+                  {searchSuggestions.map((suggestion, index) => (
+                    <button
+                      key={index}
+                      onClick={suggestion.action}
+                      className="w-full px-4 py-3 text-left hover:bg-slate-700 transition-colors border-b border-slate-700 last:border-b-0"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-white text-sm">{suggestion.title}</span>
+                        <span className="text-slate-400 text-xs">{suggestion.type}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
           
@@ -190,8 +292,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             {/* User Profile */}
             <div className="flex items-center space-x-2">
               <div className="flex items-center space-x-2 px-3 py-2 bg-slate-700 rounded-lg">
-                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                  <User size={16} className="text-white" />
+                <div className="w-8 h-8 bg-gradient-custom rounded-full flex items-center justify-center">
+                  <User size={16} className="" />
                 </div>
                 <div className="hidden sm:block">
                   <p className="text-white text-sm font-medium">{user?.email?.split('@')[0] || 'Admin'}</p>

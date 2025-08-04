@@ -10,20 +10,37 @@ import {
 } from 'lucide-react'
 import { projectsService, testimonialsService, skillsService } from '../../lib/database'
 
+
 interface Stats {
   projects: number
   testimonials: number
   skills: number
+  portfolioViews: number
   lastUpdated: string
 }
 
-const Overview: React.FC = () => {
+interface ActivityItem {
+  id: string
+  action: string
+  item: string
+  time: string
+  type: 'project' | 'testimonial' | 'skill' | 'profile' | 'contact'
+  created_at: string
+}
+
+interface OverviewProps {
+  onTabChange?: (tab: string) => void
+}
+
+const Overview: React.FC<OverviewProps> = ({ onTabChange }) => {
   const [stats, setStats] = useState<Stats>({
     projects: 0,
     testimonials: 0,
     skills: 0,
+    portfolioViews: 0,
     lastUpdated: new Date().toLocaleDateString()
   })
+  const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -35,10 +52,14 @@ const Overview: React.FC = () => {
           skillsService.getAll()
         ])
 
+        // Get portfolio views from analytics (mock for now, can be replaced with real analytics)
+        const portfolioViews = Math.floor(Math.random() * 5000) + 1000 // Mock data
+
         setStats({
           projects: projects.length,
           testimonials: testimonials.length,
           skills: skills.length,
+          portfolioViews,
           lastUpdated: new Date().toLocaleDateString()
         })
       } catch (error) {
@@ -48,8 +69,103 @@ const Overview: React.FC = () => {
       }
     }
 
+    const fetchRecentActivity = async () => {
+      try {
+        // Fetch recent activities from multiple sources
+        const activities: ActivityItem[] = []
+        
+        // Get recent projects
+        const projects = await projectsService.getAll()
+        const recentProjects = projects
+          .filter(p => p.created_at)
+          .sort((a, b) => new Date(b.created_at!).getTime() - new Date(a.created_at!).getTime())
+          .slice(0, 2)
+        
+        recentProjects.forEach(project => {
+          if (project.created_at) {
+            activities.push({
+              id: `project-${project.id}`,
+              action: 'Updated project',
+              item: project.title,
+              time: getRelativeTime(project.created_at),
+              type: 'project',
+              created_at: project.created_at
+            })
+          }
+        })
+
+        // Get recent testimonials
+        const testimonials = await testimonialsService.getAll()
+        const recentTestimonials = testimonials
+          .filter(t => t.created_at)
+          .sort((a, b) => new Date(b.created_at!).getTime() - new Date(a.created_at!).getTime())
+          .slice(0, 1)
+        
+        recentTestimonials.forEach(testimonial => {
+          if (testimonial.created_at) {
+            activities.push({
+              id: `testimonial-${testimonial.id}`,
+              action: 'New testimonial',
+              item: `From ${testimonial.name}`,
+              time: getRelativeTime(testimonial.created_at),
+              type: 'testimonial',
+              created_at: testimonial.created_at
+            })
+          }
+        })
+
+        // Get recent skills
+        const skills = await skillsService.getAll()
+        const recentSkills = skills
+          .filter(s => s.created_at)
+          .sort((a, b) => new Date(b.created_at!).getTime() - new Date(a.created_at!).getTime())
+          .slice(0, 1)
+        
+        recentSkills.forEach(skill => {
+          if (skill.created_at) {
+            activities.push({
+              id: `skill-${skill.id}`,
+              action: 'Skill updated',
+              item: `${skill.name} proficiency`,
+              time: getRelativeTime(skill.created_at),
+              type: 'skill',
+              created_at: skill.created_at
+            })
+          }
+        })
+
+        // Sort all activities by date and take top 4
+        const sortedActivities = activities
+          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+          .slice(0, 4)
+
+        setRecentActivity(sortedActivities)
+      } catch (error) {
+        console.error('Error fetching recent activity:', error)
+        // Fallback to empty array
+        setRecentActivity([])
+      }
+    }
+
     fetchStats()
+    fetchRecentActivity()
   }, [])
+
+  const getRelativeTime = (dateString: string): string => {
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60))
+    
+    if (diffInMinutes < 60) {
+      return `${diffInMinutes} minutes ago`
+    } else if (diffInMinutes < 1440) {
+      const hours = Math.floor(diffInMinutes / 60)
+      return `${hours} hour${hours > 1 ? 's' : ''} ago`
+    } else {
+      const days = Math.floor(diffInMinutes / 1440)
+      return `${days} day${days > 1 ? 's' : ''} ago`
+    }
+  }
 
   const statCards = [
     {
@@ -75,39 +191,14 @@ const Overview: React.FC = () => {
     },
     {
       title: 'Portfolio Views',
-      value: '2.4k',
+      value: stats.portfolioViews >= 1000 ? `${(stats.portfolioViews / 1000).toFixed(1)}k` : stats.portfolioViews.toString(),
       icon: Eye,
       color: 'bg-orange-500',
       change: '+12% this month'
     }
   ]
 
-  const recentActivity = [
-    {
-      action: 'Updated project',
-      item: 'E-commerce Dashboard',
-      time: '2 hours ago',
-      type: 'project'
-    },
-    {
-      action: 'New testimonial',
-      item: 'From Sarah Johnson',
-      time: '1 day ago',
-      type: 'testimonial'
-    },
-    {
-      action: 'Skill updated',
-      item: 'React proficiency',
-      time: '3 days ago',
-      type: 'skill'
-    },
-    {
-      action: 'Profile updated',
-      item: 'Contact information',
-      time: '1 week ago',
-      type: 'profile'
-    }
-  ]
+
 
   if (loading) {
     return (
@@ -186,7 +277,7 @@ const Overview: React.FC = () => {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <button 
-              onClick={() => window.location.href = '#projects'}
+              onClick={() => onTabChange?.('projects')}
               className="p-4 bg-slate-800/50 rounded-lg hover:bg-slate-700/50 hover:scale-105 transition-all duration-200 text-left group"
             >
               <FolderOpen size={20} className="text-blue-400 mb-2 group-hover:scale-110 transition-transform" />
@@ -194,7 +285,7 @@ const Overview: React.FC = () => {
               <p className="text-xs text-slate-400">Create new portfolio item</p>
             </button>
             <button 
-              onClick={() => window.location.href = '#testimonials'}
+              onClick={() => onTabChange?.('testimonials')}
               className="p-4 bg-slate-800/50 rounded-lg hover:bg-slate-700/50 hover:scale-105 transition-all duration-200 text-left group"
             >
               <MessageSquare size={20} className="text-green-400 mb-2 group-hover:scale-110 transition-transform" />
@@ -202,7 +293,7 @@ const Overview: React.FC = () => {
               <p className="text-xs text-slate-400">New client feedback</p>
             </button>
             <button 
-              onClick={() => window.location.href = '#skills'}
+              onClick={() => onTabChange?.('skills')}
               className="p-4 bg-slate-800/50 rounded-lg hover:bg-slate-700/50 hover:scale-105 transition-all duration-200 text-left group"
             >
               <Code size={20} className="text-purple-400 mb-2 group-hover:scale-110 transition-transform" />

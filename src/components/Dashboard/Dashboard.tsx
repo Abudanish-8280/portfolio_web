@@ -14,7 +14,7 @@ const Dashboard: React.FC = () => {
   const renderContent = () => {
     switch (activeTab) {
       case 'overview':
-        return <Overview />
+        return <Overview onTabChange={setActiveTab} />
       case 'projects':
         return <ProjectsManager />
       case 'testimonials':
